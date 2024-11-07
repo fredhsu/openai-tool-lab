@@ -30,6 +30,7 @@ def create_directory(dirname: str) -> str:
     os.makedirs(dirname, exist_ok=True)
     return f"directory '{dirname}' created"
 
+
 def directory_exists(dirname: str) -> bool:
     """
     Check if a directory exists.
@@ -118,12 +119,11 @@ def main():
     messages: List[ChatCompletionMessageParam] = [
         {
             "role": "system",
-            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. When creating a new file it should be placed in the directory 'group_vars'. If the directory does not exist, create it. Use the supplied tools to assist the user. ",
+            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. When creating a new file it should be placed in the directory 'group_vars'. If the directory does not exist, create it before creating the file. Use the supplied tools to assist the user. Reason through the steps and tools you will use step by step.",
         },
-        {"role": "user", "content": "Create a new file called `test.txt`"},
         {
             "role": "user",
-            "content": "Write a poem about transformers to be stored in the file",
+            "content": "Create a new file for a campus network called `CAMPUS.yml`",
         },
     ]
 
