@@ -47,6 +47,49 @@ def directory_exists(dirname: str) -> str:
         return f"The directory '{dirname}' does not exist."
 
 
+def execute_tool_call(client: OpenAI, tool_call, messages: List[ChatCompletionMessageParam], tools: List[ChatCompletionToolParam]) -> str:
+    """
+    Execute a tool call and return the result.
+    
+    Args:
+        client (OpenAI): The OpenAI client
+        tool_call: The tool call to execute
+        messages: The current conversation messages
+        tools: Available tools
+    
+    Returns:
+        str: The result of the tool call
+    """
+    arguments = json.loads(tool_call.function.arguments)
+    function_name = tool_call.function.name
+    
+    print(f"{function_name} called with arguments", arguments)
+    
+    if function_name == "create_file":
+        result = create_file(arguments["filename"], arguments["text"])
+    elif function_name == "create_directory":
+        result = create_directory(arguments["dirname"])
+    elif function_name == "directory_exists":
+        result = directory_exists(arguments["dirname"])
+        
+        # If directory_exists is called, get the next step from LLM
+        messages.append({"role": "system", "content": result})
+        next_response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            tools=tools,
+        )
+        
+        print("Next response:", next_response)
+        
+        # Process the next response's tool calls if any
+        if next_response.choices[0].message.tool_calls is not None:
+            return execute_tool_call(client, next_response.choices[0].message.tool_calls[0], messages, tools)
+    
+    print(result)
+    return result
+
+
 def main():
     client = OpenAI()
     create_file_definition: ChatCompletionToolParam = {
@@ -54,7 +97,7 @@ def main():
         "function": {
             "name": "create_file",
             "description": "Create a text file with a given filename and with the text provided. Use this function whenever the user asks to create a file with generated text",
-            "strict": True,  # used for structured outputs
+            "strict": True,
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -67,7 +110,7 @@ def main():
                         "description": "The text to write to the file",
                     },
                 },
-                "additionalProperties": False,  # doesn't allow creation of key that isn't in the list
+                "additionalProperties": False,
                 "required": ["filename", "text"],
             },
         },
@@ -140,58 +183,7 @@ def main():
     if response.choices[0].message.tool_calls is None:
         print("No tool calls found")
     else:
-        tool_call = response.choices[0].message.tool_calls[0]
-        arguments = json.loads(tool_call.function.arguments)
-        function_name = tool_call.function.name
-        if function_name == "create_file":
-            print("create_file called with arguments", arguments)
-            filename = arguments["filename"]
-            text = arguments["text"]
-            result = create_file(filename, text)
-            print(result)
-        elif function_name == "create_directory":
-            print("create_directory called with arguments", arguments)
-            dirname = arguments["dirname"]
-            result = create_directory(dirname)
-            print(result)
-        elif function_name == "directory_exists":
-            print("directory_exists called with arguments", arguments)
-            dirname = arguments["dirname"]
-            result = directory_exists(dirname)
-            print(f"Directory '{dirname}' exists: {result}")
-            
-            # Add the directory existence result to messages
-            messages.append({
-                "role": "system", 
-                "content": result
-            })
-            
-            # Get the next step from the LLM
-            next_response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                tools=tools,
-            )
-            
-            print("Next response:", next_response)
-            
-            # Process the next response's tool calls if any
-            if next_response.choices[0].message.tool_calls is not None:
-                next_tool_call = next_response.choices[0].message.tool_calls[0]
-                next_arguments = json.loads(next_tool_call.function.arguments)
-                next_function_name = next_tool_call.function.name
-                
-                if next_function_name == "create_directory":
-                    print("create_directory called with arguments", next_arguments)
-                    dirname = next_arguments["dirname"]
-                    result = create_directory(dirname)
-                    print(result)
-                elif next_function_name == "create_file":
-                    print("create_file called with arguments", next_arguments)
-                    filename = next_arguments["filename"]
-                    text = next_arguments["text"]
-                    result = create_file(filename, text)
-                    print(result)
+        execute_tool_call(client, response.choices[0].message.tool_calls[0], messages, tools)
 
 
 if __name__ == "__main__":
