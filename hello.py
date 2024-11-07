@@ -16,13 +16,14 @@ def create_file(filename: str, text: str) -> str:
         file.write(text)
     return "file created"
 
+
 def create_directory(dirname: str) -> str:
     """
     Create a directory with the given name.
-    
+
     Args:
         dirname (str): Name of the directory to create
-    
+
     Returns:
         str: Confirmation message
     """
@@ -32,7 +33,7 @@ def create_directory(dirname: str) -> str:
 
 def main():
     client = OpenAI()
-    function_definition: ChatCompletionToolParam = {
+    create_file_definition: ChatCompletionToolParam = {
         "type": "function",
         "function": {
             "name": "create_file",
@@ -76,12 +77,15 @@ def main():
         },
     }
 
-    tools: List[ChatCompletionToolParam] = [function_definition, directory_definition]
+    tools: List[ChatCompletionToolParam] = [
+        create_file_definition,
+        directory_definition,
+    ]
 
     messages: List[ChatCompletionMessageParam] = [
         {
             "role": "system",
-            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. Use the supplied tools to assist the user. ",
+            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. When creating a new file it should be placed in the directory 'group_vars'. If the directory does not exist, create it. Use the supplied tools to assist the user. ",
         },
         {"role": "user", "content": "Create a new file called `test.txt`"},
         {
