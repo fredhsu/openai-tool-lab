@@ -1,7 +1,13 @@
 import json
-from openai import OpenAI
+from openai import BaseModel, OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 from typing import List
+
+
+class NetworkDesignInput(BaseModel):
+    network_type: str
+    leafs: int
+    spines: int
 
 
 def create_file(filename: str, text: str) -> str:
@@ -17,6 +23,7 @@ def main():
         "function": {
             "name": "create_file",
             "description": "Create a text file with a given filename and with the text provided. Use this function whenever the user asks to create a file with generated text",
+            "strict": True,  # used for structured outputs
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -29,6 +36,7 @@ def main():
                         "description": "The text to write to the file",
                     },
                 },
+                "additionalProperties": False,  # doesn't allow creation of key that isn't in the list
                 "required": ["filename", "text"],
             },
         },
@@ -39,7 +47,7 @@ def main():
     messages: List[ChatCompletionMessageParam] = [
         {
             "role": "system",
-            "content": "You are a helpful customer support assistant. Use the supplied tools to assist the user.",
+            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. Use the supplied tools to assist the user. ",
         },
         {"role": "user", "content": "Create a new file called `test.txt`"},
         {
