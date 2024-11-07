@@ -1,4 +1,5 @@
 import json
+import os
 from openai import BaseModel, OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 from typing import List
@@ -14,6 +15,19 @@ def create_file(filename: str, text: str) -> str:
     with open(filename, "w") as file:
         file.write(text)
     return "file created"
+
+def create_directory(dirname: str) -> str:
+    """
+    Create a directory with the given name.
+    
+    Args:
+        dirname (str): Name of the directory to create
+    
+    Returns:
+        str: Confirmation message
+    """
+    os.makedirs(dirname, exist_ok=True)
+    return f"directory '{dirname}' created"
 
 
 def main():
@@ -42,7 +56,27 @@ def main():
         },
     }
 
-    tools: List[ChatCompletionToolParam] = [function_definition]
+    directory_definition: ChatCompletionToolParam = {
+        "type": "function",
+        "function": {
+            "name": "create_directory",
+            "description": "Create a directory with the given name",
+            "strict": True,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dirname": {
+                        "type": "string",
+                        "description": "The name of the directory to create",
+                    },
+                },
+                "additionalProperties": False,
+                "required": ["dirname"],
+            },
+        },
+    }
+
+    tools: List[ChatCompletionToolParam] = [function_definition, directory_definition]
 
     messages: List[ChatCompletionMessageParam] = [
         {
@@ -74,6 +108,11 @@ def main():
             filename = arguments["filename"]
             text = arguments["text"]
             result = create_file(filename, text)
+            print(result)
+        elif function_name == "create_directory":
+            print("create_directory called with arguments", arguments)
+            dirname = arguments["dirname"]
+            result = create_directory(dirname)
             print(result)
 
 
