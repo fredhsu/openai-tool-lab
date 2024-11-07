@@ -101,6 +101,35 @@ def execute_tool_call(
 
 def main():
     client = OpenAI()
+    network_design_input_definition: ChatCompletionToolParam {
+        "type": "function",
+        "function": {
+            "name": "network_design_input",
+            "description": "Creates a series of files to assist with deploying a network using Ansible.",
+            "strict": True,
+            # TODO: complete the properties
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "The type of network design, should be one of layer 3, layer 2, or campus",
+                    },
+                    "type": {
+                        "type": "int",
+                        "description": "",
+                    },
+                    "type": {
+                        "type": "int",
+                        "description": "",
+                    },
+                },
+                "additionalProperties": False,
+                "required": ["filename", "text"],
+            },
+        },
+    }
+
     create_file_definition: ChatCompletionToolParam = {
         "type": "function",
         "function": {
@@ -181,11 +210,22 @@ def main():
             "content": "Create a new file for a campus network called `CAMPUS.yaml`",
         },
     ]
+    # messages: List[ChatCompletionMessageParam] = [
+    #     {
+    #         "role": "system",
+    #         "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. When creating a new file it should be placed in the directory 'group_vars'. If the directory does not exist, create it before creating the file. Use the supplied tools to assist the user. Reason through the steps and tools you will use step by step. If the user does not provide the necessary information, prompt them for the missing information",
+    #     },
+    #     {
+    #         "role": "user",
+    #         "content": "Create a new file for a campus network called `CAMPUS.yaml`",
+    #     },
+    # ]
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages,
         tools=tools,
+        tool_choice="required",
     )
     print(response)
 
