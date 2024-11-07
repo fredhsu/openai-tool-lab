@@ -1,0 +1,15 @@
+# CAMPUS Network Configuration
+
+# Define the network configuration for the campus environment
+
+network_name: CAMPUS
+
+# Include specific parameters as required
+
+# Example parameter
+# routers:
+#   - name: router1
+#     ip: 192.168.1.1
+#     location: Building A
+
+# Add additional configuration details below

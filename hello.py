@@ -47,31 +47,36 @@ def directory_exists(dirname: str) -> str:
         return f"The directory '{dirname}' does not exist."
 
 
-def execute_tool_call(client: OpenAI, tool_call, messages: List[ChatCompletionMessageParam], tools: List[ChatCompletionToolParam]) -> str:
+def execute_tool_call(
+    client: OpenAI,
+    tool_call,
+    messages: List[ChatCompletionMessageParam],
+    tools: List[ChatCompletionToolParam],
+) -> str:
     """
     Execute a tool call and return the result.
-    
+
     Args:
         client (OpenAI): The OpenAI client
         tool_call: The tool call to execute
         messages: The current conversation messages
         tools: Available tools
-    
+
     Returns:
         str: The result of the tool call
     """
     arguments = json.loads(tool_call.function.arguments)
     function_name = tool_call.function.name
-    
+
     print(f"{function_name} called with arguments", arguments)
-    
+
     if function_name == "create_file":
         result = create_file(arguments["filename"], arguments["text"])
     elif function_name == "create_directory":
         result = create_directory(arguments["dirname"])
     elif function_name == "directory_exists":
         result = directory_exists(arguments["dirname"])
-        
+
         # If directory_exists is called, get the next step from LLM
         messages.append({"role": "system", "content": result})
         next_response = client.chat.completions.create(
@@ -79,13 +84,17 @@ def execute_tool_call(client: OpenAI, tool_call, messages: List[ChatCompletionMe
             messages=messages,
             tools=tools,
         )
-        
+
         print("Next response:", next_response)
-        
+
         # Process the next response's tool calls if any
         if next_response.choices[0].message.tool_calls is not None:
-            return execute_tool_call(client, next_response.choices[0].message.tool_calls[0], messages, tools)
-    
+            return execute_tool_call(
+                client, next_response.choices[0].message.tool_calls[0], messages, tools
+            )
+    else:
+        result = "No function with that name was found"
+
     print(result)
     return result
 
@@ -165,16 +174,16 @@ def main():
     messages: List[ChatCompletionMessageParam] = [
         {
             "role": "system",
-            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. When creating a new file it should be placed in the directory 'group_vars'. If the directory does not exist, create it before creating the file. Use the supplied tools to assist the user. Reason through the steps and tools you will use step by step.",
+            "content": "You are a helpful computer network designer. Your job is to take the user input and create a series of files that can be used to automate the deployment of a network. When creating a new file it should be placed in the directory 'group_vars'. If the directory does not exist, create it before creating the file. Use the supplied tools to assist the user. Reason through the steps and tools you will use step by step. If the user does not provide the necessary information, prompt them for the missing information",
         },
         {
             "role": "user",
-            "content": "Create a new file for a campus network called `CAMPUS.yml`",
+            "content": "Create a new file for a campus network called `CAMPUS.yaml`",
         },
     ]
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=messages,
         tools=tools,
     )
@@ -183,7 +192,9 @@ def main():
     if response.choices[0].message.tool_calls is None:
         print("No tool calls found")
     else:
-        execute_tool_call(client, response.choices[0].message.tool_calls[0], messages, tools)
+        execute_tool_call(
+            client, response.choices[0].message.tool_calls[0], messages, tools
+        )
 
 
 if __name__ == "__main__":
