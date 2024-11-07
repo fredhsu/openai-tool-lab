@@ -31,17 +31,20 @@ def create_directory(dirname: str) -> str:
     return f"directory '{dirname}' created"
 
 
-def directory_exists(dirname: str) -> bool:
+def directory_exists(dirname: str) -> str:
     """
-    Check if a directory exists.
+    Check if a directory exists and return a descriptive response.
 
     Args:
         dirname (str): Path to the directory to check
 
     Returns:
-        bool: True if directory exists, False otherwise
+        str: A human-readable response about the directory's existence
     """
-    return os.path.isdir(dirname)
+    if os.path.isdir(dirname):
+        return f"The directory '{dirname}' exists."
+    else:
+        return f"The directory '{dirname}' does not exist."
 
 
 def main():
