@@ -30,6 +30,18 @@ def create_directory(dirname: str) -> str:
     os.makedirs(dirname, exist_ok=True)
     return f"directory '{dirname}' created"
 
+def directory_exists(dirname: str) -> bool:
+    """
+    Check if a directory exists.
+
+    Args:
+        dirname (str): Path to the directory to check
+
+    Returns:
+        bool: True if directory exists, False otherwise
+    """
+    return os.path.isdir(dirname)
+
 
 def main():
     client = OpenAI()
@@ -77,9 +89,30 @@ def main():
         },
     }
 
+    directory_exists_definition: ChatCompletionToolParam = {
+        "type": "function",
+        "function": {
+            "name": "directory_exists",
+            "description": "Check if a directory exists",
+            "strict": True,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dirname": {
+                        "type": "string",
+                        "description": "The path to the directory to check",
+                    },
+                },
+                "additionalProperties": False,
+                "required": ["dirname"],
+            },
+        },
+    }
+
     tools: List[ChatCompletionToolParam] = [
         create_file_definition,
         directory_definition,
+        directory_exists_definition,
     ]
 
     messages: List[ChatCompletionMessageParam] = [
@@ -118,6 +151,11 @@ def main():
             dirname = arguments["dirname"]
             result = create_directory(dirname)
             print(result)
+        elif function_name == "directory_exists":
+            print("directory_exists called with arguments", arguments)
+            dirname = arguments["dirname"]
+            result = directory_exists(dirname)
+            print(f"Directory '{dirname}' exists: {result}")
 
 
 if __name__ == "__main__":
