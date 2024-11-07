@@ -10,3 +10,6 @@ wheels/
 .venv
 .aider*
 .env
+
+# generated files
+group_vars/
