@@ -159,6 +159,39 @@ def main():
             dirname = arguments["dirname"]
             result = directory_exists(dirname)
             print(f"Directory '{dirname}' exists: {result}")
+            
+            # Add the directory existence result to messages
+            messages.append({
+                "role": "system", 
+                "content": result
+            })
+            
+            # Get the next step from the LLM
+            next_response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                tools=tools,
+            )
+            
+            print("Next response:", next_response)
+            
+            # Process the next response's tool calls if any
+            if next_response.choices[0].message.tool_calls is not None:
+                next_tool_call = next_response.choices[0].message.tool_calls[0]
+                next_arguments = json.loads(next_tool_call.function.arguments)
+                next_function_name = next_tool_call.function.name
+                
+                if next_function_name == "create_directory":
+                    print("create_directory called with arguments", next_arguments)
+                    dirname = next_arguments["dirname"]
+                    result = create_directory(dirname)
+                    print(result)
+                elif next_function_name == "create_file":
+                    print("create_file called with arguments", next_arguments)
+                    filename = next_arguments["filename"]
+                    text = next_arguments["text"]
+                    result = create_file(filename, text)
+                    print(result)
 
 
 if __name__ == "__main__":
