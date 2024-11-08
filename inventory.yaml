@@ -1,0 +1,14 @@
+CAMPUS:
+  children:
+    CAMPUS_FABRIC:
+      children:
+        LEAFS:
+          hosts:
+            LEAF0: 
+            LEAF1: 
+            LEAF2: 
+            LEAF3: 
+        SPINES:
+          hosts:
+            SPINE0: 
+            SPINE1: 

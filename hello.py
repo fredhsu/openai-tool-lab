@@ -1,4 +1,5 @@
 import json
+import yaml
 import os
 from openai import BaseModel, OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
@@ -9,6 +10,50 @@ class NetworkDesignInput(BaseModel):
     network_type: str
     leafs: int
     spines: int
+
+
+def create_inventory(network_design_input: NetworkDesignInput) -> str:
+    spines = {}
+    leafs = {}
+    for i in range(network_design_input.spines):
+        spines[f"SPINE{i}"] = None
+
+    for i in range(network_design_input.leafs):
+        leafs[f"LEAF{i}"] = None
+
+    inventory = {
+        "CAMPUS": {
+            "children": {
+                "CAMPUS_FABRIC": {
+                    "children": {"SPINES": {"hosts": spines}, "LEAFS": {"hosts": leafs}}
+                }
+            }
+        }
+    }
+    inventory_yaml = yaml.dump(inventory)
+
+    return inventory_yaml.replace("null", "")
+
+
+def validate_inputs():
+    pass
+
+
+def generate_avd():
+    pass
+
+
+def create_base_files(network_design_input: NetworkDesignInput):
+    # Create inventory
+    inventory = create_inventory(network_design_input)
+    create_file("inventory.yaml", inventory)
+    print("created inventory")
+    # Create group_vars
+    create_directory("group_vars")
+    create_file("group_vars/SPINES.yaml", "type: l3spine")
+    create_file("group_vars/LEAFS.yaml", "type: l2leaf")
+    # Create campus
+    # Create fabric
 
 
 def create_file(filename: str, text: str) -> str:
@@ -101,31 +146,31 @@ def execute_tool_call(
 
 def main():
     client = OpenAI()
-    network_design_input_definition: ChatCompletionToolParam {
+
+    network_design_input_definition: ChatCompletionToolParam = {
         "type": "function",
         "function": {
             "name": "network_design_input",
             "description": "Creates a series of files to assist with deploying a network using Ansible.",
             "strict": True,
-            # TODO: complete the properties
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "type": {
+                    "network_type": {
                         "type": "string",
                         "description": "The type of network design, should be one of layer 3, layer 2, or campus",
                     },
-                    "type": {
+                    "leafs": {
                         "type": "int",
-                        "description": "",
+                        "description": "The number of leaf switches in the network",
                     },
-                    "type": {
+                    "spines": {
                         "type": "int",
-                        "description": "",
+                        "description": "the number of spine switches in the network",
                     },
                 },
                 "additionalProperties": False,
-                "required": ["filename", "text"],
+                "required": ["network_type", "leafs", "spines"],
             },
         },
     }
@@ -207,7 +252,7 @@ def main():
         },
         {
             "role": "user",
-            "content": "Create a new file for a campus network called `CAMPUS.yaml`",
+            "content": "Create a new file for a campus network with 8 leafs and 2 spines",
         },
     ]
     # messages: List[ChatCompletionMessageParam] = [
