@@ -22,17 +22,19 @@ def create_inventory(network_design_input: NetworkDesignInput) -> str:
         leafs[f"LEAF{i}"] = None
 
     inventory = {
-        "CAMPUS": {
-            "children": {
-                "CAMPUS_FABRIC": {
-                    "children": {"SPINES": {"hosts": spines}, "LEAFS": {"hosts": leafs}}
-                }
-            }
-        }
+        "CAMPUS": {"children": {"SPINES": {"hosts": spines}, "LEAFS": {"hosts": leafs}}}
     }
     inventory_yaml = yaml.dump(inventory)
 
     return inventory_yaml.replace("null", "")
+
+
+def add_service():
+    pass
+
+
+def get_services():
+    pass
 
 
 def validate_inputs():
@@ -50,10 +52,74 @@ def create_base_files(network_design_input: NetworkDesignInput):
     print("created inventory")
     # Create group_vars
     create_directory("group_vars")
+    # TODO: Add make the choices between network types an enum and create the appropriate types in the files
     create_file("group_vars/SPINES.yaml", "type: l3spine")
     create_file("group_vars/LEAFS.yaml", "type: l2leaf")
-    # Create campus
-    # Create fabric
+    # Create campus - will collapse the variables for campus and fabirc to just campus
+    campus_variables = """
+    local_users:
+      - name: admin
+        privilege: 15
+        role: network-admin
+        sha512_password: "$6$eucN5ngreuExDgwS$xnD7T8jO..GBDX0DUlp.hn.W7yW94xTjSanqgaQGBzPIhDAsyAl9N4oScHvOMvf07uVBFI4mKMxwdVEUVKgY/."
+
+    # AAA Authorization
+    aaa_authorization:
+      exec:
+        default: local
+
+    # OOB Management network default gateway.
+    mgmt_gateway: 172.16.100.1
+    mgmt_interface: Management0
+
+    # Fabric settings
+    fabric_name: CAMPUS
+
+    # Spine Switches
+    l3spine:
+        defaults:
+            platform: cEOSLab
+            loopback_ipv4_pool: 172.16.1.0/24
+        node_groups:
+            - group: SPINES
+            nodes:
+                - name: SPINE1
+                id: 1
+                mgmt_ip: 172.16.100.101/24
+                - name: SPINE2
+                id: 2
+                mgmt_ip: 172.16.100.102/24
+
+    # IDF - Leaf Switches
+    l2leaf:
+        defaults:
+            platform: cEOSLab
+            mlag_peer_ipv4_pool: 192.168.0.0/24
+            spanning_tree_mode: mstp
+            spanning_tree_priority: 16384
+            inband_mgmt_subnet: 10.10.10.0/24
+            inband_mgmt_vlan: 10
+        node_groups:
+            - group: IDF1
+            mlag: true
+            uplink_interfaces: [Ethernet51]
+            mlag_interfaces: [Ethernet53, Ethernet54]
+            filter:
+                tags: [ "110", "120", "130" ]
+            nodes:
+                - name: LEAF1A
+                id: 3
+                mgmt_ip: 172.16.100.103/24
+                uplink_switches: [SPINE1]
+                uplink_switch_interfaces: [Ethernet1]
+                - name: LEAF1B
+                id: 4
+                mgmt_ip: 172.16.100.104/24
+                uplink_switches: [SPINE2]
+                uplink_switch_interfaces: [Ethernet1]
+    """
+
+    create_file("group_vars/CAMPUS.yaml", campus_variables)
 
 
 def create_file(filename: str, text: str) -> str:
